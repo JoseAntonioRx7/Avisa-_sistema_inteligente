@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avisa+ | Reportar Problema</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
+        h1 { color: #2c3e50; font-size: 24px; text-align: center; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #7f8c8d; margin-bottom: 25px; font-size: 14px; }
+        label { font-weight: bold; color: #34495e; display: block; margin-top: 15px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #bdc3c7; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { background-color: #e74c3c; color: white; border: none; padding: 15px; width: 100%; font-size: 18px; border-radius: 8px; margin-top: 25px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #c0392b; }
+        #resultado { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; text-align: center; font-weight: bold; }
+        .risco-Alto { background-color: #ffcccc; color: #cc0000; }
+        .risco-Medio { background-color: #fff3cd; color: #856404; }
+        .risco-Baixo { background-color: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Avisa+</h1>
+        <p class="subtitle">Comunique problemas de serviços essenciais</p>
+        
+        <form id="avisoForm">
+            <label for="service_type">Qual é o serviço?</label>
+            <select id="service_type" required>
+                <option value="agua">Água</option>
+                <option value="energia">Energia Elétrica</option>
+                <option value="transporte">Transporte Público</option>
+            </select>
+
+            <label for="location">Onde está acontecendo?</label>
+            <input type="text" id="location" placeholder="Ex: Rua das Flores, 123" required>
+
+            <label for="description">Descreva o problema:</label>
+            <textarea id="description" rows="3" placeholder="Ex: Fio estourado no poste dando choque" required></textarea>
+
+            <button type="submit">Enviar Alerta Agora</button>
+        </form>
+
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        document.getElementById('avisoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = "Enviando...";
+            
+            const data = {
+                service_type: document.getElementById('service_type').value,
+                location: document.getElementById('location').value,
+                description: document.getElementById('description').value
+            };
+
+            try {
+                const response = await fetch('/events/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                // Mostrar resultado com a cor da IA
+                const divResult = document.getElementById('resultado');
+                divResult.style.display = 'block';
+                divResult.className = `risco-${result.risk_level}`;
+                divResult.innerText = `Recebido! Risco classificado pela IA: ${result.risk_level}`;
+                
+                e.target.reset(); // Limpa o formulário
+            } catch (error) {
+                alert("Erro ao enviar aviso. Tente novamente.");
+            } finally {
+                btn.innerText = "Enviar Alerta Agora";
+            }
+        });
+    </script>
+</body>
+</html>

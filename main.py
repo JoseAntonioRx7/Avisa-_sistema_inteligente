@@ -4,6 +4,8 @@ from pydantic import BaseModel
 import ai_engine
 import database
 import notifier
+from fastapi import FastAPI, Depends
+from fastapi.responses import HTMLResponse
 
 app = FastAPI(
     title="Avisa+ API",
@@ -33,9 +35,12 @@ class EventResponse(EventCreate):
     # Configuração para o Pydantic ler os dados do SQLAlchemy
     model_config = {"from_attributes": True}
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def read_root():
-    return {"status": "Avisa+ API rodando perfeitamente!"}
+    # Lê o arquivo HTML que acabamos de criar e devolve para o navegador
+    with open("templates/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    return html_content
 
 @app.post("/events/", response_model=EventResponse)
 def create_event(event: EventCreate, db: Session = Depends(get_db)):

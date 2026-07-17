@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import ai_engine
 import database
-import notifier
 from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 
@@ -58,7 +57,5 @@ def create_event(event: EventCreate, db: Session = Depends(get_db)):
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
-
-    notifier.alert_system.send_voice_alert(risk_level=calculated_risk, description=event.description)
     
     return db_event

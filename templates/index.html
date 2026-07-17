@@ -45,6 +45,19 @@
     </div>
 
     <script>
+        // Função para o celular falar
+        function falarAlerta(risco, descricao) {
+            if ('speechSynthesis' in window) {
+                // Prepara a frase
+                const frase = new SpeechSynthesisUtterance(`Atenção. Risco ${risco} registrado. ${descricao}`);
+                frase.lang = 'pt-BR'; // Garante o português do Brasil!
+                frase.rate = 1.0;     // Velocidade normal
+                
+                // Dispara a voz no celular do usuário
+                window.speechSynthesis.speak(frase);
+            }
+        }
+
         document.getElementById('avisoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
@@ -64,12 +77,17 @@
                 });
                 const result = await response.json();
                 
-                // Mostrar resultado com a cor da IA
+                // Mostrar resultado na tela
                 const divResult = document.getElementById('resultado');
                 divResult.style.display = 'block';
                 divResult.className = `risco-${result.risk_level}`;
-                divResult.innerText = `Recebido! Risco classificado pela IA: ${result.risk_level}`;
+                divResult.innerText = `✅ Recebido! Risco classificado pela IA: ${result.risk_level}`;
                 
+                // Dispara o áudio apenas se o risco for Alto ou Médio
+                if (result.risk_level === 'Alto' || result.risk_level === 'Medio') {
+                    falarAlerta(result.risk_level, data.description);
+                }
+
                 e.target.reset(); // Limpa o formulário
             } catch (error) {
                 alert("Erro ao enviar aviso. Tente novamente.");
@@ -77,6 +95,6 @@
                 btn.innerText = "Enviar Alerta Agora";
             }
         });
-    </script>
+    </script>                                                                                       
 </body>
 </html>

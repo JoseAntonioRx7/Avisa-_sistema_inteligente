@@ -3,4 +3,3 @@ uvicorn
 sqlalchemy
 pydantic
 scikit-learn
-pyttsx3

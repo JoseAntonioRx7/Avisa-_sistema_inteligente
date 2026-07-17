@@ -1,6 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy import Boolean, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
 import datetime
+from sqlalchemy import Boolean
 
 # Cria um arquivo SQLite local chamado avisa_plus.db
 SQLALCHEMY_DATABASE_URL = "sqlite:///./avisa_plus.db"
@@ -26,3 +27,12 @@ class Event(Base):
 
 # Cria a tabela no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)
+
+# NOVO: Tabela do Radar (Inscritos)
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contact_info = Column(String, unique=True, index=True) # Pode ser telefone ou email
+    location = Column(String, index=True)                  # Bairro ou região de interesse
+    is_active = Column(Boolean, default=True)              # Para o usuário poder cancelar os alertas depois    

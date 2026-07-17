@@ -34,6 +34,17 @@ class EventResponse(EventCreate):
     # Configuração para o Pydantic ler os dados do SQLAlchemy
     model_config = {"from_attributes": True}
 
+# Schemas para o Radar
+class SubscriberCreate(BaseModel):
+    contact_info: str
+    location: str
+
+class SubscriberResponse(SubscriberCreate):
+    id: int
+    is_active: bool
+    model_config = {"from_attributes": True}
+
+
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     # Lê o arquivo HTML que acabamos de criar e devolve para o navegador
@@ -59,3 +70,29 @@ def create_event(event: EventCreate, db: Session = Depends(get_db)):
     db.refresh(db_event)
     
     return db_event
+
+# NOVA ROTA: Cadastro no Radar
+@app.post("/subscribe/", response_model=SubscriberResponse)
+def create_subscriber(sub: SubscriberCreate, db: Session = Depends(get_db)):
+    # Verifica se o contato já existe para evitar duplicidade
+    existing_sub = db.query(database.Subscriber).filter(
+        database.Subscriber.contact_info == sub.contact_info
+    ).first()
+    
+    if existing_sub:
+        # Se já existe, apenas atualiza a localização
+        existing_sub.location = sub.location  # type: ignore[assignment]
+        db.commit()
+        db.refresh(existing_sub)
+        return existing_sub
+
+    # Se é novo, cria o registro
+    new_sub = database.Subscriber(
+        contact_info=sub.contact_info,
+        location=sub.location
+    )
+    db.add(new_sub)
+    db.commit()
+    db.refresh(new_sub)
+    
+    return new_sub

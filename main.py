@@ -1,7 +1,9 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+import ai_engine
 import database
+import notifier
 
 app = FastAPI(
     title="Avisa+ API",
@@ -39,7 +41,7 @@ def read_root():
 def create_event(event: EventCreate, db: Session = Depends(get_db)):
     # ATENÇÃO: Aqui é onde nossa IA vai entrar depois para classificar o risco!
     # Por enquanto, vamos deixar como "Pendente"
-    calculated_risk = "Pendente" 
+    calculated_risk = ai_engine.classifier.predict_risk(event.description)
     
     # Salva no banco de dados
     db_event = database.Event(
@@ -51,5 +53,7 @@ def create_event(event: EventCreate, db: Session = Depends(get_db)):
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
+
+    notifier.alert_system.send_voice_alert(risk_level=calculated_risk, description=event.description)
     
     return db_event

@@ -1,5 +1,14 @@
+# Ambientes Virtuais
 venv/
+env/
+
+# Arquivos compilados do Python
 __pycache__/
 *.pyc
+
+# Bancos de dados locais (O Render vai usar o próprio espaço temporário ou precisaremos de um Postgres depois)
+avisa_plus.db
+*.sqlite3
+
+# Variáveis de ambiente (senhas, chaves)
 .env
-*.db

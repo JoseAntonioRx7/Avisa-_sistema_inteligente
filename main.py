@@ -5,12 +5,15 @@ import ai_engine
 import database
 from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
+import weather_service
 
 app = FastAPI(
     title="Avisa+ API",
     description="Sistema inteligente de alertas para serviços essenciais.",
     version="2.0.0"
 )
+
+database.Base.metadata.create_all(bind=database.engine)  # Cria as tabelas no banco de dados, se não existirem
 
 # Dependência para abrir e fechar a conexão com o banco a cada requisição
 def get_db():
@@ -96,3 +99,35 @@ def create_subscriber(sub: SubscriberCreate, db: Session = Depends(get_db)):
     db.refresh(new_sub)
     
     return new_sub
+
+# NOVA ROTA: O Vigia que verifica o clima para os inscritos
+@app.get("/check-radar/")
+def check_radar(db: Session = Depends(get_db)):
+    # 1. Pega todas as regiões únicas que temos cadastradas
+    subscribers = db.query(database.Subscriber).filter(database.Subscriber.is_active == True).all()
+    
+    # Extrai apenas os nomes dos bairros/cidades, sem repetir
+    unique_locations = set([sub.location for sub in subscribers])
+    
+    alerts_generated = []
+
+    # 2. Verifica o clima de cada região
+    for location in unique_locations:
+        weather_report = weather_service.check_weather_risk(str(location))
+        
+        # 3. Se houver risco, prepara o alerta
+        if weather_report["risk"] in ["Alto", "Medio"]:
+            # Acha quem são as pessoas dessa região específica para "notificar"
+            affected_users = [sub.contact_info for sub in subscribers if (str(sub.location) == location)]
+            
+            alerts_generated.append({
+                "location": location,
+                "risk": weather_report["risk"],
+                "message": weather_report["message"],
+                "users_notified": affected_users
+            })
+
+    if not alerts_generated:
+        return {"status": "Tudo tranquilo", "message": "Nenhum risco iminente nas regiões monitoradas."}
+    
+    return {"status": "Alertas Disparados", "alerts": alerts_generated}

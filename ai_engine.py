@@ -1,46 +1,56 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import make_pipeline
-
-# Nosso "conhecimento base". Quanto mais exemplos adicionarmos aqui no futuro, mais inteligente a IA fica.
-TRAINING_DATA = [
-    # (Descrição do problema, Nível de Risco)
-    ("Falta de água na rua principal, as torneiras estão secas", "Alto"),
-    ("Cano vazando um pouco na calçada, mas tem água em casa", "Baixo"),
-    ("Sem energia elétrica desde as 14h, tudo escuro", "Alto"),
-    ("A luz está piscando bastante, mas ainda não caiu", "Medio"),
-    ("O ônibus não passou no horário de pico, ponto lotado", "Alto"),
-    ("Atraso de 10 minutos no transporte", "Baixo"),
-    ("Poste pegando fogo, soltando faíscas, perigo", "Alto"),
-    ("Rua alagada, água entrando nas casas", "Alto"),
-    ("Água com cor muito escura e cheiro estranho saindo da torneira", "Medio"),
-    ("Fio solto no meio da rua", "Alto"),
-]
+from sklearn.pipeline import Pipeline
 
 class RiskClassifier:
     def __init__(self):
-        # Pipeline: transforma o texto em números e aplica a classificação
-        self.model = make_pipeline(TfidfVectorizer(), MultinomialNB())
-        self.is_trained = False
-
-    def train(self):
-        # Separa os textos e as etiquetas (labels)
-        texts = [item[0] for item in TRAINING_DATA]
-        labels = [item[1] for item in TRAINING_DATA]
+        # 1. O Dataset (Conjunto de Dados de Treino)
+        # É assim que ensinamos a IA. Quanto mais exemplos, mais inteligente ela fica.
+        self.training_data = [
+            # Risco Alto (Risco à vida ou acidentes graves)
+            ("fio solto pegando fogo no poste dando choque", "Alto"),
+            ("estourou um cano e a rua está alagando muito rápido", "Alto"),
+            ("cheiro forte de gás e faíscas perto da estação", "Alto"),
+            ("ônibus pegando fogo na avenida", "Alto"),
+            ("poste caiu em cima da casa e tem fios no chão", "Alto"),
+            
+            # Risco Médio (Problemas graves, mas sem risco imediato à vida)
+            ("estamos sem energia desde ontem a noite inteira", "Medio"),
+            ("vazamento de água grande na calçada", "Medio"),
+            ("ônibus quebrou no meio da rua e travou o trânsito", "Medio"),
+            ("bueiro entupido retornando esgoto para a rua", "Medio"),
+            
+            # Risco Baixo (Inconvenientes e manutenções simples)
+            ("lâmpada do poste está queimada", "Baixo"),
+            ("ônibus atrasou 20 minutos hoje", "Baixo"),
+            ("água está saindo fraca da torneira", "Baixo"),
+            ("buraco pequeno na rua atrapalhando", "Baixo")
+        ]
         
-        # Treina o modelo instantaneamente
-        self.model.fit(texts, labels)
-        self.is_trained = True
-        print("Modelo de IA (NLP) treinado e pronto para uso!")
+        # 2. Separando os Dados
+        # X = As frases (os dados de entrada)
+        # y = O nível de risco (as respostas corretas)
+        X_train = [item[0] for item in self.training_data]
+        y_train = [item[1] for item in self.training_data]
+        
+        # 3. Construindo o Cérebro (Pipeline)
+        # O Pipeline conecta a transformação de texto em números com o algoritmo de aprendizado
+        self.model = Pipeline([
+            ('vectorizer', TfidfVectorizer()),  # Transforma o texto em uma matriz de números
+            ('classifier', MultinomialNB())     # Algoritmo de probabilidade que aprende os padrões
+        ])
+        
+        # 4. O Treinamento (Fit)
+        # Aqui é onde a CPU trabalha. A IA estuda as frases e cria seu modelo matemático.
+        self.model.fit(X_train, y_train)
 
     def predict_risk(self, description: str) -> str:
-        # Garante que o modelo treine na primeira vez que for chamado
-        if not self.is_trained:
-            self.train()
-        
-        # A IA faz a previsão com base no que aprendeu
+        """
+        Recebe a descrição do usuário e tenta prever o nível de risco.
+        """
+        # A IA faz a inferência com base no que aprendeu no treinamento
         prediction = self.model.predict([description])
         return str(prediction[0])
 
-# Criamos uma instância global para a API utilizar
+# Instanciamos a classe para o main.py poder usá-la
 classifier = RiskClassifier()

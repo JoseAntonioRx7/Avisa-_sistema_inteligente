@@ -66,6 +66,14 @@
         <div id="resultadoRadar" class="mensagem sucesso"></div>
     </div>
 
+    <!-- BLOCO 3: Painel do Vigia -->
+    <div class="card">
+        <h2>Painel de Previsão</h2>
+        <p class="subtitle">Consulte o satélite para alertas climáticos nas regiões monitoradas.</p>
+        <button id="btnVerificar" style="background-color: #f39c12;">Verificar Ameaças Agora</button>
+        <div id="resultadoVigia" class="mensagem"></div>
+    </div>
+
     <script>
         // Função para o celular falar (TTS)
         function falarAlerta(risco, descricao) {
@@ -140,6 +148,41 @@
                 alert("Erro ao ativar radar.");
             } finally {
                 btn.innerText = "Ativar Radar";
+            }
+        });
+
+        // Lógica de Consulta do Vigia (Radar Preditivo)
+        document.getElementById('btnVerificar').addEventListener('click', async (e) => {
+            const btn = e.target;
+            btn.innerText = "Consultando Satélite...";
+            
+            try {
+                const response = await fetch('/check-radar/');
+                const result = await response.json();
+                
+                const divResult = document.getElementById('resultadoVigia');
+                divResult.style.display = 'block';
+                divResult.innerHTML = ""; // Limpa resultados anteriores
+                
+                if (result.alerts && result.alerts.length > 0) {
+                    divResult.className = 'mensagem risco-Alto';
+                    divResult.innerHTML = `⚠️ <strong>${result.status}</strong><br>`;
+                    
+                    result.alerts.forEach(alerta => {
+                        // Adiciona o alerta na tela
+                        divResult.innerHTML += `<hr>📍 <strong>${alerta.location}</strong>: ${alerta.message}`;
+                        
+                        // O sistema fala o alerta em voz alta
+                        falarAlerta(alerta.risk, `Alerta preventivo para ${alerta.location}. ${alerta.message}`);
+                    });
+                } else {
+                    divResult.className = 'mensagem sucesso';
+                    divResult.innerText = `✅ ${result.status}: ${result.message}`;
+                }
+            } catch (error) {
+                alert("Erro ao consultar o satélite.");
+            } finally {
+                btn.innerText = "Verificar Ameaças Agora";
             }
         });
     </script>

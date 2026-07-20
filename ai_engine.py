@@ -1,65 +1,61 @@
 import os
 import json
-import re
 from google import genai
 from dotenv import load_dotenv
+import re
 
-# Carrega as variáveis de ambiente
+
 load_dotenv()
 
 class RiskAuditor:
     def __init__(self):
-        # O novo SDK usa o Client para gerenciar a conexão
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         
-        # O System Prompt (regras do jogo) continua o mesmo
         self.system_prompt = """
         Você é um auditor de infraestrutura urbana sênior. 
         Sua tarefa é analisar relatos de cidadãos sobre problemas em serviços essenciais (água, energia, transporte).
         
         Classifique o risco do relato em uma destas categorias exatas:
-        - Alto: Risco imediato à vida, acidentes graves ou interrupção total de serviço vital (ex: fogo, fio exposto, inundação grave).
-        - Medio: Problemas sérios que precisam de atenção, mas sem risco imediato à vida (ex: vazamento, falta de energia).
+        - Alto: Risco imediato à vida, acidentes graves ou interrupção total (ex: fogo, fio exposto, enchente).
+        - Medio: Problemas sérios sem risco imediato à vida (ex: vazamento, falta de energia).
         - Baixo: Inconvenientes ou manutenções simples (ex: lâmpada queimada, atraso).
-        - Falso: Relatos absurdos, testes, brincadeiras ou impossíveis (ex: disco voador, dragão, invasão alienígena).
+        - Falso: Relatos absurdos, brincadeiras ou impossíveis (ex: dragão, alienígena).
         
-        Você DEVE responder APENAS com um objeto JSON válido, sem formatação markdown (como ```json), usando a seguinte estrutura:
+        Você DEVE responder APENAS com um objeto JSON válido, sem markdown:
         {
             "risk_level": "Alto|Medio|Baixo|Falso",
-            "extracted_entities": ["lista", "de", "palavras-chave", "do", "problema"],
-            "justification": "Breve justificativa técnica da sua decisão"
+            "extracted_entities": ["lista", "de", "palavras"],
+            "justification": "Breve justificativa técnica"
         }
         """
 
     def predict_risk(self, description: str) -> str:
-        """
-        Envia a descrição para o Gemini usando o novo SDK e audita a resposta.
-        """
         try:
-            # Junta as instruções do sistema com o relato do usuário
-            prompt_completo = f"{self.system_prompt}\n\nRelato do cidadão: '{description}'"
+            prompt_completo = f"{self.system_prompt}\n\nRelato: '{description}'"
             
-            # Nova sintaxe para chamar o modelo (usando a versão flash mais recente)
             response = self.client.models.generate_content(
                 model='gemini-2.0-flash',
                 contents=prompt_completo
             )
             
-            # Limpa a resposta para o JSON ler corretamente
             clean_text = re.sub(r'```(?:json)?\n?', '', response.text or '').strip()
-            
-            # Transforma a string em um dicionário
             audited_data = json.loads(clean_text)
             
-            # Exibe no terminal para acompanhamento
-            print(f"\n[IA AUDITOR] Análise concluída: {audited_data.get('justification', '')}")
-            print(f"[IA AUDITOR] Entidades detectadas: {audited_data.get('extracted_entities', [])}\n")
-            
+            print(f"\n[IA AUDITOR] Análise: {audited_data.get('justification', '')}")
             return audited_data.get("risk_level", "Baixo")
 
         except Exception as e:
-            print(f"Erro na análise da IA: {e}")
+            error_msg = str(e)
+            # A REDE DE SEGURANÇA: Tratando o limite de cota
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                print("\n[SISTEMA] Cota da IA excedida! Ativando protocolo de contingência (Fallback).")
+                # Classificação de segurança manual baseada em palavras-chave urgentes
+                palavras_criticas = ["fogo", "choque", "explosão", "enchente", "fio"]
+                if any(palavra in description.lower() for palavra in palavras_criticas):
+                    return "Alto"
+                return "Medio"
+            
+            print(f"\n[ERRO IA] Falha desconhecida: {e}")
             return "Medio"
 
-# Instanciamos o novo auditor
 classifier = RiskAuditor()

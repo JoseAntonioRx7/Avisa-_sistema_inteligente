@@ -1,56 +1,65 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
+import os
+import json
+import re
+from google import genai
+from dotenv import load_dotenv
 
-class RiskClassifier:
+# Carrega as variáveis de ambiente
+load_dotenv()
+
+class RiskAuditor:
     def __init__(self):
-        # 1. O Dataset (Conjunto de Dados de Treino)
-        # É assim que ensinamos a IA. Quanto mais exemplos, mais inteligente ela fica.
-        self.training_data = [
-            # Risco Alto (Risco à vida ou acidentes graves)
-            ("fio solto pegando fogo no poste dando choque", "Alto"),
-            ("estourou um cano e a rua está alagando muito rápido", "Alto"),
-            ("cheiro forte de gás e faíscas perto da estação", "Alto"),
-            ("ônibus pegando fogo na avenida", "Alto"),
-            ("poste caiu em cima da casa e tem fios no chão", "Alto"),
-            
-            # Risco Médio (Problemas graves, mas sem risco imediato à vida)
-            ("estamos sem energia desde ontem a noite inteira", "Medio"),
-            ("vazamento de água grande na calçada", "Medio"),
-            ("ônibus quebrou no meio da rua e travou o trânsito", "Medio"),
-            ("bueiro entupido retornando esgoto para a rua", "Medio"),
-            
-            # Risco Baixo (Inconvenientes e manutenções simples)
-            ("lâmpada do poste está queimada", "Baixo"),
-            ("ônibus atrasou 20 minutos hoje", "Baixo"),
-            ("água está saindo fraca da torneira", "Baixo"),
-            ("buraco pequeno na rua atrapalhando", "Baixo")
-        ]
+        # O novo SDK usa o Client para gerenciar a conexão
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         
-        # 2. Separando os Dados
-        # X = As frases (os dados de entrada)
-        # y = O nível de risco (as respostas corretas)
-        X_train = [item[0] for item in self.training_data]
-        y_train = [item[1] for item in self.training_data]
+        # O System Prompt (regras do jogo) continua o mesmo
+        self.system_prompt = """
+        Você é um auditor de infraestrutura urbana sênior. 
+        Sua tarefa é analisar relatos de cidadãos sobre problemas em serviços essenciais (água, energia, transporte).
         
-        # 3. Construindo o Cérebro (Pipeline)
-        # O Pipeline conecta a transformação de texto em números com o algoritmo de aprendizado
-        self.model = Pipeline([
-            ('vectorizer', TfidfVectorizer()),  # Transforma o texto em uma matriz de números
-            ('classifier', MultinomialNB())     # Algoritmo de probabilidade que aprende os padrões
-        ])
+        Classifique o risco do relato em uma destas categorias exatas:
+        - Alto: Risco imediato à vida, acidentes graves ou interrupção total de serviço vital (ex: fogo, fio exposto, inundação grave).
+        - Medio: Problemas sérios que precisam de atenção, mas sem risco imediato à vida (ex: vazamento, falta de energia).
+        - Baixo: Inconvenientes ou manutenções simples (ex: lâmpada queimada, atraso).
+        - Falso: Relatos absurdos, testes, brincadeiras ou impossíveis (ex: disco voador, dragão, invasão alienígena).
         
-        # 4. O Treinamento (Fit)
-        # Aqui é onde a CPU trabalha. A IA estuda as frases e cria seu modelo matemático.
-        self.model.fit(X_train, y_train)
+        Você DEVE responder APENAS com um objeto JSON válido, sem formatação markdown (como ```json), usando a seguinte estrutura:
+        {
+            "risk_level": "Alto|Medio|Baixo|Falso",
+            "extracted_entities": ["lista", "de", "palavras-chave", "do", "problema"],
+            "justification": "Breve justificativa técnica da sua decisão"
+        }
+        """
 
     def predict_risk(self, description: str) -> str:
         """
-        Recebe a descrição do usuário e tenta prever o nível de risco.
+        Envia a descrição para o Gemini usando o novo SDK e audita a resposta.
         """
-        # A IA faz a inferência com base no que aprendeu no treinamento
-        prediction = self.model.predict([description])
-        return str(prediction[0])
+        try:
+            # Junta as instruções do sistema com o relato do usuário
+            prompt_completo = f"{self.system_prompt}\n\nRelato do cidadão: '{description}'"
+            
+            # Nova sintaxe para chamar o modelo (usando a versão flash mais recente)
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt_completo
+            )
+            
+            # Limpa a resposta para o JSON ler corretamente
+            clean_text = re.sub(r'```(?:json)?\n?', '', response.text or '').strip()
+            
+            # Transforma a string em um dicionário
+            audited_data = json.loads(clean_text)
+            
+            # Exibe no terminal para acompanhamento
+            print(f"\n[IA AUDITOR] Análise concluída: {audited_data.get('justification', '')}")
+            print(f"[IA AUDITOR] Entidades detectadas: {audited_data.get('extracted_entities', [])}\n")
+            
+            return audited_data.get("risk_level", "Baixo")
 
-# Instanciamos a classe para o main.py poder usá-la
-classifier = RiskClassifier()
+        except Exception as e:
+            print(f"Erro na análise da IA: {e}")
+            return "Medio"
+
+# Instanciamos o novo auditor
+classifier = RiskAuditor()

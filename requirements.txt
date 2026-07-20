@@ -2,6 +2,6 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
-scikit-learn
 requests
 python-dotenv
+google-genai

@@ -41,7 +41,7 @@ class RiskAuditor:
             
             # Nova sintaxe para chamar o modelo (usando a versão flash mais recente)
             response = self.client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.0-flash',
                 contents=prompt_completo
             )
             

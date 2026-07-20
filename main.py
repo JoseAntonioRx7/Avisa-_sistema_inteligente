@@ -6,6 +6,9 @@ import database
 from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 import weather_service
+from fastapi import FastAPI, Depends, BackgroundTasks
+import notification_service
+
 
 app = FastAPI(
     title="Avisa+ API",
@@ -102,23 +105,27 @@ def create_subscriber(sub: SubscriberCreate, db: Session = Depends(get_db)):
 
 # NOVA ROTA: O Vigia que verifica o clima para os inscritos
 @app.get("/check-radar/")
-def check_radar(db: Session = Depends(get_db)):
+def check_radar(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # 1. Pega todas as regiões únicas que temos cadastradas
     subscribers = db.query(database.Subscriber).filter(database.Subscriber.is_active == True).all()
     
     # Extrai apenas os nomes dos bairros/cidades, sem repetir
     unique_locations = set([sub.location for sub in subscribers])
-    
     alerts_generated = []
 
-    # 2. Verifica o clima de cada região
     for location in unique_locations:
         weather_report = weather_service.check_weather_risk(str(location))
         
-        # 3. Se houver risco, prepara o alerta
         if weather_report["risk"] in ["Alto", "Medio"]:
-            # Acha quem são as pessoas dessa região específica para "notificar"
-            affected_users = [sub.contact_info for sub in subscribers if (str(sub.location) == location)]
+            # Acha quem são as pessoas dessa região
+            affected_users = [str(sub.contact_info) for sub in subscribers if (str(sub.location) == location)]
+            
+            # Prepara a mensagem de emergência
+            mensagem_alerta = f"AVISA+: Alerta de risco {weather_report['risk']} em {location}. {weather_report['message']}"
+            
+            # Dispara os SMS nos bastidores para não travar a tela do usuário
+            for telefone in affected_users:
+                background_tasks.add_task(notification_service.enviar_sms, telefone, mensagem_alerta)
             
             alerts_generated.append({
                 "location": location,

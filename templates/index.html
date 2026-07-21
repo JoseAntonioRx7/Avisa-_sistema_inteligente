@@ -3,188 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avisa+ | Sistema de Alertas</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
-        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
-        h1 { font-size: 24px; }
-        h2 { font-size: 20px; color: #2980b9; }
-        p.subtitle { text-align: center; color: #7f8c8d; margin-bottom: 25px; font-size: 14px; }
-        label { font-weight: bold; color: #34495e; display: block; margin-top: 15px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #bdc3c7; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #e74c3c; color: white; border: none; padding: 15px; width: 100%; font-size: 18px; border-radius: 8px; margin-top: 25px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
-        button.btn-blue { background-color: #2980b9; }
-        button:hover { filter: brightness(90%); }
-        .mensagem { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; text-align: center; font-weight: bold; }
-        .sucesso { background-color: #d4edda; color: #155724; }
-        .risco-Alto { background-color: #ffcccc; color: #cc0000; }
-        .risco-Medio { background-color: #fff3cd; color: #856404; }
-        .risco-Baixo { background-color: #d4edda; color: #155724; }
-    </style>
-</head>
-<body>
-
-    <!-- BLOCO 1: Reportar Problema -->
-    <div class="card">
-        <h1>Avisa+</h1>
-        <p class="subtitle">Comunique problemas de serviços essenciais</p>
-        
-        <form id="avisoForm">
-            <label for="service_type">Qual é o serviço?</label>
-            <select id="service_type" required>
-                <option value="agua">Água</option>
-                <option value="energia">Energia Elétrica</option>
-                <option value="transporte">Transporte Público</option>
-            </select>
-
-            <label for="location">Onde está acontecendo?</label>
-            <input type="text" id="location" placeholder="Ex: Rua das Flores, Centro" required>
-
-            <label for="description">Descreva o problema:</label>
-            <textarea id="description" rows="3" placeholder="Ex: Fio estourado no poste dando choque" required></textarea>
-
-            <button type="submit">Enviar Alerta</button>
-        </form>
-        <div id="resultadoEvento" class="mensagem"></div>
-    </div>
-
-    <!-- BLOCO 2: Radar (Inscrição) -->
-    <div class="card">
-        <h2>Radar de Prevenção</h2>
-        <p class="subtitle">Cadastre-se para ser avisado antes que o problema aconteça na sua região.</p>
-        
-        <form id="radarForm">
-            <label for="telefone">Seu número de Telefone:</label>
-            <input type="tel" id="telefone" placeholder="(DD) 99999-9999" required>
-
-            <label for="radar_location">Qual bairro/região quer monitorar?</label>
-            <input type="text" id="radar_location" placeholder="Ex: Centro" required>
-
-            <button type="submit" class="btn-blue">Ativar Radar</button>
-        </form>
-        <div id="resultadoRadar" class="mensagem sucesso"></div>
-    </div>
-
-    <!-- BLOCO 3: Painel do Vigia -->
-    <div class="card">
-        <h2>Painel de Previsão</h2>
-        <p class="subtitle">Consulte o satélite para alertas climáticos nas regiões monitoradas.</p>
-        <button id="btnVerificar" style="background-color: #f39c12;">Verificar Ameaças Agora</button>
-        <div id="resultadoVigia" class="mensagem"></div>
-    </div>
-
+    <title>Avisa+ | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Função para o celular falar (TTS)
-        function falarAlerta(risco, descricao) {
-            if ('speechSynthesis' in window) {
-                const frase = new SpeechSynthesisUtterance(`Atenção. Risco ${risco} registrado. ${descricao}`);
-                frase.lang = 'pt-BR';
-                window.speechSynthesis.speak(frase);
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#4318FF',
+                        brandLight: '#868CFF',
+                        bgGray: '#F4F7FE',
+                        textDark: '#2B3674',
+                        textGray: '#A3AED0'
+                    }
+                }
             }
         }
+    </script>
+</head>
+<body class="bg-bgGray min-h-screen flex flex-col md:flex-row font-sans">
 
-        // Lógica de envio do Evento
-        document.getElementById('avisoForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            btn.innerText = "Enviando...";
+    <!-- SIDEBAR -->
+    <nav class="w-full md:w-64 bg-white p-6 flex md:flex-col justify-between md:justify-start items-center md:items-start shadow-sm z-10">
+        <div class="text-2xl font-bold text-brand md:mb-10">Avisa+</div>
+        <div class="flex md:flex-col gap-6 md:gap-4">
+            <p class="text-brand font-semibold cursor-pointer">🏠 Dashboard</p>
+            <p class="text-textGray cursor-pointer">🔔 Meus Alertas</p>
+        </div>
+    </nav>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto">
+        
+        <!-- BANNER DE STATUS -->
+        <div class="bg-gradient-to-r from-brandLight to-brand rounded-3xl p-8 text-white mb-8 shadow-lg">
+            <h2 class="text-3xl font-bold mb-2">Bom dia, Cidadão!</h2>
+            <p class="text-sm md:text-base opacity-90">Sua região está sendo monitorada. Sistema pronto para auditoria.</p>
+        </div>
+
+        <h3 class="text-xl font-bold text-textDark mb-6">Acesso Rápido</h3>
+        
+        <!-- CARDS DE ACESSO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             
-            const data = {
-                service_type: document.getElementById('service_type').value,
-                location: document.getElementById('location').value,
-                description: document.getElementById('description').value
-            };
+            <!-- Card Reportar Risco (Abre o Modal) -->
+            <div onclick="abrirModal()" class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1">
+                <div class="text-4xl mb-3">🚨</div>
+                <h3 class="text-lg font-bold text-textDark">Reportar Risco</h3>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1">
+                <div class="text-4xl mb-3">🛰️</div>
+                <h3 class="text-lg font-bold text-textDark">Consultar Satélite</h3>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1">
+                <div class="text-4xl mb-3">📱</div>
+                <h3 class="text-lg font-bold text-textDark">Receber SMS</h3>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL DO FORMULÁRIO INTERATIVO -->
+    <div id="modalReporte" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl p-6 md:p-8 w-full max-w-lg shadow-2xl relative">
+            <h3 class="text-2xl font-bold text-textDark mb-4">Reportar Incidente</h3>
+            <p class="text-sm text-textGray mb-6">Descreva o que está acontecendo. Nossa IA fará a auditoria e classificação imediata do risco.</p>
+            
+            <form id="formRelato" onsubmit="enviarRelato(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-textDark mb-2">Descrição do Problema</label>
+                    <textarea id="descricao" rows="4" required class="w-full bg-bgGray border-none rounded-xl p-4 text-textDark focus:ring-2 focus:ring-brand outline-none" placeholder="Ex: Poste soltando faíscas na Rua Principal..."></textarea>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl text-textGray font-semibold hover:bg-bgGray transition">Cancelar</button>
+                    <button type="submit" id="btnEnviar" class="px-6 py-2.5 bg-brand text-white rounded-xl font-semibold hover:opacity-90 transition">Enviar Alerta</button>
+                </div>
+            </form>
+
+            <!-- Área de Resposta da IA -->
+            <div id="resultadoIA" class="hidden mt-6 p-4 rounded-xl bg-bgGray border-l-4 border-brand">
+                <h4 class="font-bold text-textDark text-sm">Feedback da Auditoria:</h4>
+                <p id="textoResposta" class="text-sm text-textDark mt-1"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE CONEXÃO COM O BACKEND -->
+    <script>
+        function abrirModal() {
+            document.getElementById('modalReporte').classList.remove('hidden');
+            document.getElementById('resultadoIA').classList.add('hidden');
+            document.getElementById('descricao').value = '';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalReporte').classList.add('hidden');
+        }
+
+        async function enviarRelato(event) {
+            event.preventDefault();
+            const descricao = document.getElementById('descricao').value;
+            const btn = document.getElementById('btnEnviar');
+            
+            btn.innerText = "Analisando com IA...";
+            btn.disabled = true;
 
             try {
-                const response = await fetch('/events/', {
+                // Comunicação com a API FastAPI (ajuste a URL se necessário)
+                const response = await fetch('http://127.0.0.1:8000/reports/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({ description: descricao })
                 });
-                const result = await response.json();
+
+                const data = await response.json();
                 
-                const divResult = document.getElementById('resultadoEvento');
-                divResult.style.display = 'block';
-                divResult.className = `mensagem risco-${result.risk_level}`;
-                divResult.innerText = `✅ Recebido! Risco: ${result.risk_level}`;
+                const boxRes = document.getElementById('resultadoIA');
+                const txtRes = document.getElementById('textoResposta');
                 
-                if (result.risk_level === 'Alto' || result.risk_level === 'Medio') {
-                    falarAlerta(result.risk_level, data.description);
-                }
-                e.target.reset();
+                boxRes.classList.remove('hidden');
+                txtRes.innerHTML = `<strong>Nível de Risco Classificado:</strong> ${data.risk_level} <br><em>Obrigado por relatar. A infraestrutura foi notificada.</em>`;
             } catch (error) {
-                alert("Erro ao enviar aviso.");
+                alert("Erro ao conectar com o servidor.");
             } finally {
                 btn.innerText = "Enviar Alerta";
+                btn.disabled = false;
             }
-        });
-
-        // Lógica de Inscrição no Radar
-        document.getElementById('radarForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            btn.innerText = "Cadastrando...";
-            
-            const data = {
-                contact_info: document.getElementById('telefone').value,
-                location: document.getElementById('radar_location').value
-            };
-
-            try {
-                const response = await fetch('/subscribe/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                
-                const divResult = document.getElementById('resultadoRadar');
-                divResult.style.display = 'block';
-                divResult.innerText = `✅ Radar ativado para a região: ${result.location}!`;
-                
-                e.target.reset();
-            } catch (error) {
-                alert("Erro ao ativar radar.");
-            } finally {
-                btn.innerText = "Ativar Radar";
-            }
-        });
-
-        // Lógica de Consulta do Vigia (Radar Preditivo)
-        document.getElementById('btnVerificar').addEventListener('click', async (e) => {
-            const btn = e.target;
-            btn.innerText = "Consultando Satélite...";
-            
-            try {
-                const response = await fetch('/check-radar/');
-                const result = await response.json();
-                
-                const divResult = document.getElementById('resultadoVigia');
-                divResult.style.display = 'block';
-                divResult.innerHTML = ""; // Limpa resultados anteriores
-                
-                if (result.alerts && result.alerts.length > 0) {
-                    divResult.className = 'mensagem risco-Alto';
-                    divResult.innerHTML = `⚠️ <strong>${result.status}</strong><br>`;
-                    
-                    result.alerts.forEach(alerta => {
-                        // Adiciona o alerta na tela
-                        divResult.innerHTML += `<hr>📍 <strong>${alerta.location}</strong>: ${alerta.message}`;
-                        
-                        // O sistema fala o alerta em voz alta
-                        falarAlerta(alerta.risk, `Alerta preventivo para ${alerta.location}. ${alerta.message}`);
-                    });
-                } else {
-                    divResult.className = 'mensagem sucesso';
-                    divResult.innerText = `✅ ${result.status}: ${result.message}`;
-                }
-            } catch (error) {
-                alert("Erro ao consultar o satélite.");
-            } finally {
-                btn.innerText = "Verificar Ameaças Agora";
-            }
-        });
+        }
     </script>
 </body>
 </html>
